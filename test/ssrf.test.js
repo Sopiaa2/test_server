@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { isBlockedIp, safeFetch, assertFetchableUrl, FetchBlockedError } from '../src/ssrf.js';
+import { isBlockedIp, fetchExternal, assertFetchableUrl, FetchBlockedError } from '../src/ssrf.js';
 
 test('내부/예약 IP 는 차단 (IPv4)', () => {
   for (const ip of ['127.0.0.1', '10.1.2.3', '172.16.0.1', '172.31.255.255', '192.168.0.1', '169.254.169.254', '100.64.0.1', '0.0.0.0', '224.0.0.1', '255.255.255.255']) {
@@ -32,7 +32,7 @@ test('위험한 URL 은 요청 전에 거부', async () => {
     'http://intranet/', 'http://printer.local/', 'http://metadata.internal/',
     'http://example.com:22/', 'http://example.com:8080/', 'ftp://example.com/', 'file:///etc/passwd', 'http://user:pw@example.com/', 'not a url',
   ];
-  for (const u of bad) await assert.rejects(() => safeFetch(u), FetchBlockedError, u);
+  for (const u of bad) await assert.rejects(() => fetchExternal(u), FetchBlockedError, u);
 });
 
 test('정상 외부 URL 은 사전 검사를 통과', () => {
@@ -61,14 +61,14 @@ function withServer(handler, fn) {
 test('타임아웃: 응답이 없으면 지정 시간 안에 실패', async () => {
   await withServer(() => {}, async (port) => {
     const t = Date.now();
-    await assert.rejects(() => safeFetch(`http://127.0.0.1:${port}/`, { ...relaxed, allowedPorts: [port], timeoutMs: 300 }), /시간이 초과/);
+    await assert.rejects(() => fetchExternal(`http://127.0.0.1:${port}/`, { ...relaxed, allowedPorts: [port], timeoutMs: 300 }), /시간이 초과/);
     assert.ok(Date.now() - t < 2000);
   });
 });
 
 test('응답 크기 상한: 큰 응답은 잘라서 반환', async () => {
   await withServer((req, res) => res.end('x'.repeat(100_000)), async (port) => {
-    const r = await safeFetch(`http://127.0.0.1:${port}/`, { ...relaxed, allowedPorts: [port], maxBytes: 1000 });
+    const r = await fetchExternal(`http://127.0.0.1:${port}/`, { ...relaxed, allowedPorts: [port], maxBytes: 1000 });
     assert.equal(r.body.length, 1000);
     assert.equal(r.truncated, true);
   });
@@ -81,14 +81,14 @@ test('같은 사이트 안의 리디렉션은 따라가고, 내부 IP 로의 리
     res.end('ok');
   }, async (port) => {
     const opts = { allowedPorts: [port], blockCheck: (ip) => ip !== '127.0.0.1' };
-    const r = await safeFetch(`http://127.0.0.1:${port}/a`, opts);
+    const r = await fetchExternal(`http://127.0.0.1:${port}/a`, opts);
     assert.equal(r.body, 'ok');
-    await assert.rejects(() => safeFetch(`http://127.0.0.1:${port}/evil`, opts), FetchBlockedError);
+    await assert.rejects(() => fetchExternal(`http://127.0.0.1:${port}/evil`, opts), FetchBlockedError);
   });
 });
 
 test('다른 사이트로의 리디렉션 차단', async () => {
   await withServer((req, res) => res.writeHead(302, { location: 'http://example.org/' }).end(), async (port) => {
-    await assert.rejects(() => safeFetch(`http://127.0.0.1:${port}/`, { ...relaxed, allowedPorts: [port, 80] }), /다른 사이트/);
+    await assert.rejects(() => fetchExternal(`http://127.0.0.1:${port}/`, { ...relaxed, allowedPorts: [port, 80] }), /다른 사이트/);
   });
 });

@@ -1,7 +1,7 @@
 // 공개 지표 수집기. 수집 대상은 "메이커가 등록한 URL"에서 식별자만 뽑아 만든,
 // 허용된 호스트(스토어/npm/GitHub)의 주소뿐입니다. 임의 URL 은 가져오지 않습니다.
 //
-// fetcher(url, opts) => { status, body, finalUrl }  (실서비스는 ssrf.safeFetch, 테스트는 가짜)
+// fetcher(url, opts) => { status, body, finalUrl }  (실서비스는 ssrf.fetchExternal, 테스트는 가짜)
 
 export class UserError extends Error {}
 

@@ -200,7 +200,7 @@ function requestOnce(url, { timeoutMs, maxBytes, headers, blockCheck }) {
   });
 }
 
-export async function safeFetch(rawUrl, opts = {}) {
+export async function fetchExternal(rawUrl, opts = {}) {
   const {
     timeoutMs = 5000,
     maxBytes = 1_000_000,

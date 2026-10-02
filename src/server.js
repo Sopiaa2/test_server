@@ -3,12 +3,12 @@ import path from 'node:path';
 import { loadConfig } from './config.js';
 import { Store } from './store.js';
 import { createApp } from './app.js';
-import { safeFetch } from './ssrf.js';
+import { fetchExternal } from './ssrf.js';
 import { refreshAll } from './metrics.js';
 
 const config = loadConfig();
 const store = new Store(path.join(config.dataDir, 'data.json'));
-const { handler } = createApp({ store, config, fetcher: safeFetch });
+const { handler } = createApp({ store, config, fetcher: fetchExternal });
 
 // 예기치 못한 오류로 서버가 죽지 않도록
 process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e));
@@ -28,7 +28,7 @@ async function collect() {
   if (running) return;
   running = true;
   try {
-    const r = await refreshAll(store, { fetcher: safeFetch, githubToken: config.githubToken });
+    const r = await refreshAll(store, { fetcher: fetchExternal, githubToken: config.githubToken });
     console.log(`[collect] 성공 ${r.ok} / 실패 ${r.failed}`);
   } catch (e) {
     console.error('[collect]', e);
