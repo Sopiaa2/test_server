@@ -1,0 +1,12 @@
+{
+  "name": "maker-board",
+  "version": "0.1.0",
+  "description": "한국 인디 메이커 검증 지표 순위표 (MVP 1단계)",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  }
+}
